@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎾 용인 테니스 예약</title>
+
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --text:#0f172a;
+  --sub:#64748b;
+  --primary:#4f46e5;
+  --border:#e5e7eb;
+  --radius:18px;
+}
+
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  background:linear-gradient(180deg,#eef2ff,#f8fafc);
+  color:var(--text);
+}
+
+.container{
+  max-width:900px;
+  margin:0 auto;
+  padding:20px 16px 160px;
+}
+
+/* ===== 헤더 ===== */
+.header h1{
+  margin:0;
+  font-size:22px;
+  font-weight:800;
+}
+.header .updated{
+  margin-top:6px;
+  font-size:13px;
+  color:var(--sub);
+}
+
+/* ===== 카드 ===== */
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:18px;
+  box-shadow:0 10px 28px rgba(0,0,0,.08);
+  margin-top:16px;
+}
+
+.card h3{
+  margin:0 0 14px;
+  font-size:16px;
+  font-weight:700;
+}
+
+/* ===== 공통 입력 ===== */
+.select, .date-box{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-size:14px;
+}
+
+.select select{
+  border:none;
+  outline:none;
+  font-size:14px;
+  width:100%;
+  background:none;
+}
+
+.date-box{
+  cursor:pointer;
+}
+.date-box span{
+  color:var(--sub);
+  font-size:14px;
+}
+
+/* 숨김 date input */
+.date-box input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+/* ===== 필터 ===== */
+.filter-stack{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* ===== 알람 ===== */
+.alarm-stack{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+button{
+  margin-top:6px;
+  padding:14px;
+  border-radius:14px;
+  border:none;
+  background:var(--primary);
+  color:#fff;
+  font-weight:700;
+  font-size:15px;
+}
+
+/* ===== 예약 데이터 ===== */
+.court-card{
+  margin-bottom:22px;
+}
+.court-title{
+  font-weight:700;
+}
+.court-loc{
+  font-size:13px;
+  color:var(--sub);
+  margin-bottom:6px;
+}
+.date-box-view{
+  background:#f8fafc;
+  border-radius:14px;
+  padding:12px;
+  margin-top:10px;
+}
+.date-title{
+  font-weight:600;
+  font-size:14px;
+  margin-bottom:8px;
+}
+.slots{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.slot{
+  padding:8px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  font-size:13px;
+  background:#fff;
+}
+</style>
+</head>
+
+<body>
+<div id="pullIndicator"
+    style="
+      position: fixed;
+      top: -50px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      text-align: center;
+      line-height: 50px;
+      background: #f5f5f5;
+      color: #555;
+      font-size: 14px;
+      transition: top 0.2s;
+      z-index: 9999;
+    ">
+🔄 아래로 당겨 새로고침
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>🎾 용인 테니스 예약</h1>
+    <div class="updated" id="updatedAt">업데이트 확인 중…</div>
+  </div>
+
+  <!-- 필터 -->
+  <div class="card">
+    <h3>필터</h3>
+    <div class="filter-stack">
+      <div class="select">
+        🏘️
+        <select id="filterGu">
+          <option value="">구 전체</option>
+          <option>처인구</option>
+          <option>기흥구</option>
+          <option>수지구</option>
+        </select>
+      </div>
+
+      <div class="select">
+        🎾
+        <select id="filterCourt">
+          <option value="">코트 전체</option>
+        </select>
+      </div>
+
+      <label class="date-box" onclick="filterDate.click()">
+        📅 <span id="filterDateLabel">날짜 선택</span>
+        <input type="date" id="filterDate">
+      </label>
+    </div>
+  </div>
+
+  <!-- 알람 -->
+  <div class="card">
+    <h3>🔔 알람 등록
+      <button id="noticeBtn"
+        style="
+          font-size:12px;
+          background:none;
+          border:none;
+          color:#666;
+          padding:4px;
+          cursor:pointer;
+        ">
+        ⓘ 알람 등록 유의사항
+      </button>
+    </h3>
+    <div class="alarm-stack">
+      <div class="select">
+        🎾
+        <select id="alarmCourt">
+          <option value="">코트 선택</option>
+        </select>
+      </div>
+
+      <label class="date-box" onclick="alarmDate.click()">
+        📅 <span id="alarmDateLabel">날짜 선택</span>
+        <input type="date" id="alarmDate">
+      </label>
+
+      <button id="alarmBtn">알람 등록</button>
+    </div>
+
+    <div id="alarmList" style="margin-top:12px;font-size:13px;color:var(--sub)">
+      등록된 알람이 없습니다.
+    </div>
+  </div>
+
+  <!-- 데이터 -->
+  <div class="card">
+    
+    <h3>예약 가능 현황 </h3>
+    <div id="courts">
+      ⏳ 예약 정보를 불러오는 중입니다…
+    </div>
+  </div>
+</div>
+<div id="noticeModal" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:10000;
+">
+  <div id="noticeModalContent" style="
+    background:#fff;
+    max-width:340px;
+    margin:10vh auto;
+    padding:16px;
+    border-radius:10px;
+
+    /* 🔥 핵심 */
+    max-height:70vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
+  ">
+    <h3 style="margin-top:0;">🔔 알람 등록 유의사항</h3>
+
+    <p><b>공통</b><br>
+    • 브라우저 알림 기능이 활성화되어 있어야 합니다.</p>
+
+    <p><b>iPhone(iOS)</b><br>
+    • Safari → 홈 화면에 추가 후 사용</p>
+
+    - Safari 내 ...버튼을 눌러 공유 버튼 클릭
+    <img src="/static/ios_add_home_1.png"
+         style="width:100%;border-radius:6px;">
+    
+    - 더보기 혹은 아래로 스크롤하여 홈 화면에 추가 클릭
+    <img src="/static/ios_add_home_2.png"
+         style="width:100%;margin-top:8px;border-radius:6px;">
+
+    <div style="text-align:right;margin-top:12px;">
+      <button id="closeNoticeBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const VAPID_PUBLIC_KEY = "BLLOhRZIO4FbSxSapToATz0L5QGkn_0UGBdVrwsp-IeEBfKd_vFyeDXiVsZ8AGJ2Dbv52zDMzQ-LU2qEVng9M7I";
+
+let DATA = {};
+let COURT_GROUPS = {};
+
+async function enablePushIfNeeded({ silent = false } = {}) {
+  try {
+    // 이미 있으면 재사용
+    const existing = localStorage.getItem("subscription_id");
+    if (existing) return existing;
+
+    // 지원 여부 체크 (중요)
+    if (!("serviceWorker" in navigator)) {
+      throw new Error("serviceWorker not supported");
+    }
+    if (!("PushManager" in window)) {
+      throw new Error("PushManager not supported");
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      throw new Error("notification permission denied");
+    }
+
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const res = await fetch("/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sub)
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error("push/subscribe failed: " + res.status + " " + txt);
+    }
+
+    const data = await res.json();
+    if (!data.subscription_id) {
+      throw new Error("server did not return subscription_id");
+    }
+
+    localStorage.setItem("subscription_id", data.subscription_id);
+
+    if (!silent) {
+      alert("알람 등록 완료!");
+    }
+
+    return data.subscription_id;
+
+  } catch (e) {
+    console.error("enablePushIfNeeded error:", e);
+    if (!silent) {
+      alert("푸시 초기화 실패: " + e.message);
+    }
+    throw e;
+  }
+}
+
+
+
+
+
+function urlBase64ToUint8Array(base64) {
+  const padding = "=".repeat((4 - base64.length % 4) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+}
+
+function getCourtGroup(title){
+  return title
+    .replace(/\[.*?\]/g, "")   // [유료] 제거
+    .split("테니스장")[0]      // '테니스장' 앞까지만 사용
+    .trim();
+}
+
+function getWeekday(yyyymmdd){
+  const d=new Date(
+    yyyymmdd.slice(0,4),
+    yyyymmdd.slice(4,6)-1,
+    yyyymmdd.slice(6,8)
+  );
+  return ["일","월","화","수","목","금","토"][d.getDay()];
+}
+
+let retryTimer = null;
+let retryCount = 0;
+
+async function loadData() {
+  try {
+    const res = await fetch("/data", {
+      credentials: "same-origin"
+    });
+
+    const data = await res.json();
+
+    DATA = data;
+
+    renderUpdatedTime(data.updated_at);
+    buildCourtGroups();
+    renderCourts();
+    loadMyAlarms();
+
+  } catch (e) {
+    console.error("[loadData error]", e);
+    document.getElementById("courts").innerHTML =
+      "⏳ 서버에서 예약 정보를 불러오지 못했습니다.<br>잠시 후 새로고침 해주세요.";
+  }
+}
+let pullStartY = null;
+let isRefreshing = false;
+
+const pullIndicator = document.getElementById("pullIndicator");
+const PULL_THRESHOLD = 70; // 당겨야 새로고침되는 거리(px)
+
+window.addEventListener("touchstart", e => {
+  if (window.scrollY === 0 && !isRefreshing) {
+    pullStartY = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+window.addEventListener("touchmove", e => {
+  if (pullStartY === null || isRefreshing) return;
+
+  const currentY = e.touches[0].clientY;
+  const diff = currentY - pullStartY;
+
+  if (diff > 0) {
+    e.preventDefault(); // 기본 스크롤 방지 (중요)
+
+    const offset = Math.min(diff, 80);
+    pullIndicator.style.top = (-50 + offset) + "px";
+
+    if (diff > PULL_THRESHOLD) {
+      pullIndicator.textContent = "🔄 Refresh";
+    } else {
+      pullIndicator.textContent = "🔄 Refresh";
+    }
+  }
+}, { passive: false });
+
+window.addEventListener("touchend", async () => {
+  if (pullStartY === null || isRefreshing) return;
+
+  const indicatorTop = parseInt(pullIndicator.style.top || "-50", 10);
+
+  pullIndicator.style.top = "-50px";
+
+  if (indicatorTop > 20) {
+    // 🔥 새로고침 트리거
+    isRefreshing = true;
+    pullIndicator.textContent = "⏳ Refreshing...";
+    pullIndicator.style.top = "0px";
+
+    try {
+      await loadData();
+      await loadMyAlarms();
+
+    } catch (e) {
+      alert("새로고침 실패: " + e.message);
+    }
+
+    pullIndicator.style.top = "-50px";
+    isRefreshing = false;
+  }
+
+  pullStartY = null;
+});
+
+
+
+function renderUpdatedTime(updatedAt) {
+  if (!updatedAt) {
+    document.getElementById("updatedAt").innerText =
+      "마지막 업데이트 : 정보 없음";
+    return;
+  }
+
+  const d = new Date(updatedAt);
+
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+
+  document.getElementById("updatedAt").innerText =
+    `마지막 업데이트 : ${hh}:${mm}`;
+}
+
+
+
+function buildCourtGroups(){
+  COURT_GROUPS={};
+  Object.values(DATA.facilities).forEach(f=>{
+    const g=getCourtGroup(f.title);
+    COURT_GROUPS[g]=true;
+  });
+
+  filterCourt.innerHTML='<option value="">코트 전체</option>';
+  alarmCourt.innerHTML='<option value="">코트 선택</option>';
+
+  Object.keys(COURT_GROUPS)
+  .sort((a, b) => a.localeCompare(b, "ko"))
+  .forEach(g => {
+    filterCourt.innerHTML += `<option>${g}</option>`;
+    alarmCourt.innerHTML += `<option>${g}</option>`;
+  });
+
+}
+
+filterDate.onchange=()=>{
+  filterDateLabel.textContent = filterDate.value;
+  renderCourts();
+};
+alarmDate.onchange=()=>{
+  alarmDateLabel.textContent = alarmDate.value;
+};
+
+function makeReserveLink(resveId){
+  const base =
+    "https://publicsports.yongin.go.kr/publicsports/sports/selectFcltyRceptResveViewU.do";
+  return `${base}?key=4236&resveId=${resveId}&pageUnit=8&pageIndex=1&checkSearchMonthNow=false`;
+}
+
+
+
+function renderCourts(){
+  courts.innerHTML="";
+  const gu=filterGu.value;
+  const group=filterCourt.value;
+  const date=filterDate.value.replaceAll("-","");
+
+  for(const id in DATA.facilities){
+    const fac=DATA.facilities[id];
+    const g=getCourtGroup(fac.title);
+
+    if(gu && !fac.location?.includes(gu)) continue;
+    if(group && g!==group) continue;
+
+    const days=DATA.availability[id];
+    if(!days) continue;
+
+    let has=false;
+    let html=`<div class="court-card">
+      <div class="court-title">${fac.title}</div>
+      <div class="court-loc">${fac.location||""}</div>`;
+
+    for(const d in days){
+      if(date && d!==date) continue;
+      if(!days[d].length) continue;
+      has=true;
+      html+=`<div class="date-box-view">
+        <div class="date-title">
+          ${d.slice(4,6)}.${d.slice(6,8)} (${getWeekday(d)})
+        </div>
+        <div class="slots">`;
+      days[d].forEach(s=>{
+        html+=`
+          <a class="slot"
+          href="${makeReserveLink(id)}"
+          target="_blank">
+          ${s.timeContent}
+          </a>`;
+      });
+      html+=`</div></div>`;
+    }
+
+    html+=`</div>`;
+    if(has) courts.innerHTML+=html;
+  }
+
+  if(!courts.innerHTML) courts.textContent="조건에 맞는 예약이 없습니다.";
+}
+async function loadMyAlarms() {
+  const subscriptionId = localStorage.getItem("subscription_id");
+  const alarmListEl = document.getElementById("alarmList");
+
+  if (!subscriptionId) {
+    alarmListEl.innerHTML = "<li>알람이 없습니다.</li>";
+    return;
+  }
+
+  const res = await fetch(
+    "/alarm/list?subscription_id=" + encodeURIComponent(subscriptionId)
+  );
+
+  if (!res.ok) {
+    alarmListEl.innerHTML = "<li>알람 정보를 불러오지 못했습니다.</li>";
+    return;
+  }
+
+  const alarms = await res.json();
+
+  if (alarms.length === 0) {
+    alarmListEl.innerHTML = "<li>등록된 알람이 없습니다.</li>";
+    return;
+  }
+
+  alarmListEl.innerHTML = "";
+
+  for (const a of alarms) {
+    const li = document.createElement("li");
+    li.style.display = "flex";
+    li.style.justifyContent = "space-between";
+    li.style.alignItems = "center";
+
+    const text = document.createElement("span");
+    text.textContent = `${a.date} · ${a.court_group}`;
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "✕";
+    delBtn.style.fontSize = "12px";
+    delBtn.style.padding = "2px 6px";
+    delBtn.style.border = "1px solid #ccc";
+    delBtn.style.borderRadius = "4px";
+    delBtn.style.background = "#fff";
+    delBtn.style.color = "#888";
+
+
+    delBtn.onclick = async () => {
+      if (!confirm("이 알람을 삭제할까요?")) return;
+
+      await deleteAlarm(a.date, a.court_group);
+      await loadMyAlarms(); // ✅ 즉시 갱신
+    };
+
+    li.appendChild(text);
+    li.appendChild(delBtn);
+    alarmListEl.appendChild(li);
+  }
+}
+
+async function deleteAlarm(date, courtGroup) {
+  const subscriptionId = localStorage.getItem("subscription_id");
+
+  if (!subscriptionId) {
+    alert("subscription_id가 없습니다.");
+    return;
+  }
+
+  const res = await fetch("/alarm/delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subscription_id: subscriptionId,
+      date: date,
+      court_group: courtGroup
+    })
+  });
+
+  if (!res.ok) {
+    alert("알람 삭제 실패");
+  }
+}
+
+alarmBtn.onclick = async () => {
+  try {
+    // 🔥 1️⃣ push 구독 확보 (이미 있으면 재사용)
+    const subscriptionId = await enablePushIfNeeded();
+
+    // 2️⃣ 입력값 검증
+    if (!alarmCourt.value || !alarmDate.value) {
+      alert("코트와 날짜를 선택하세요");
+      return;
+    }
+
+    // 🔥 3️⃣ 알람 등록
+    const res = await fetch("/alarm/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscription_id: subscriptionId,
+        court_group: alarmCourt.value,
+        date: alarmDate.value
+      })
+    });
+
+    // 🔥 서버가 JSON이 아닐 수도 있으니 보호
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("서버 응답 형식 오류");
+    }
+
+    if (data.status === "duplicate") {
+      alert("이미 등록된 알람입니다.");
+      return;
+    }
+
+    if (data.status === "added") {
+      alert("알람 등록 완료!");
+    } else {
+      alert("알람 등록 실패");
+    }
+
+  } catch (e) {
+    console.error(e);
+    alert("알림설정/알람등록 실패: " + e.message);
+  }
+
+  // 6️⃣ 목록 갱신
+  loadMyAlarms();
+};
+
+
+function isDesktop() {
+  return window.innerWidth >= 768;
+}
+
+
+if (isDesktop()) {
+  flatpickr("#filterDate", {
+    dateFormat: "Y-m-d",
+    onChange: function(selectedDates, dateStr) {
+      filterDateLabel.textContent = dateStr;
+      renderCourts();
+    }
+  });
+
+  flatpickr("#alarmDate", {
+    dateFormat: "Y-m-d",
+    onChange: function(selectedDates, dateStr) {
+      alarmDateLabel.textContent = dateStr;
+    }
+  });
+}
+
+async function init() {
+  try {
+    // 🔕 init에서는 push 실패해도 무시
+    try {
+      await enablePushIfNeeded({ silent: true });
+    } catch (e) {
+      console.warn("Push not ready yet:", e.message);
+    }
+
+    await loadData();
+    await loadMyAlarms();
+
+  } catch (e) {
+    alert("init fatal error: " + e.message);
+  }
+}
+
+
+filterGu.onchange=renderCourts;
+filterCourt.onchange=renderCourts;
+
+window.addEventListener("load", () => {
+  init();
+});
+
+document.getElementById("noticeBtn").onclick = () => {
+  document.getElementById("noticeModal").style.display = "block";
+};
+
+document.getElementById("closeNoticeBtn").onclick = () => {
+  document.getElementById("noticeModal").style.display = "none";
+};
+
+document.getElementById("noticeModal").onclick = (e) => {
+  if (e.target.id === "noticeModal") {
+    e.target.style.display = "none";
+  }
+};
+
+
+</script>
+</body>
+</html>
