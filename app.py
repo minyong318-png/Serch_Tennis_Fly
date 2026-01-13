@@ -19,7 +19,7 @@ from tennis_core import run_all
 # Flask 기본 설정
 # =========================
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET", "tennis-secret")
+#app.secret_key = os.environ.get("FLASK_SECRET", "tennis-secret")
 
 # =========================
 # 환경변수 설정
@@ -34,7 +34,7 @@ db_initialized = False
 # =========================
 def get_db():
     return psycopg2.connect(
-        os.environ["DATABASE_URL"],
+        DATABASE_URL,
         sslmode="require"
     )
 
